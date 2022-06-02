@@ -22,6 +22,7 @@ server_socket.listen()
 
 sockets_list = [server_socket]
 clients = {}
+lances = {}
 
 print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
 
@@ -53,7 +54,6 @@ while True:
             sockets_list.append(client_socket)
             clients[client_socket] = user
             print('Cliente conectado. Email: {}. Endereço: {}:{}'.format(user['data'].decode('utf-8'), *client_address))
-            send_msg(client_socket, welcome)
         
         else:
             message = receive_message(notified_socket)
@@ -71,13 +71,11 @@ while True:
                 "message": message["data"].decode("utf-8")
             }
             
+            if (type(decoded['message']) is list): send_msg(notified_socket, NOME + "chegou um dict ")
+
             print(f'{decoded["email"]}: {decoded["message"]}')
             
             if (decoded['message'] == "salve"): send_msg(notified_socket, NOME + "Resposta do servidor")
-
-            for client_socket in clients:
-                if client_socket != notified_socket:
-                    client_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
 
     for notified_socket in exception_sockets:
         sockets_list.remove(notified_socket)
