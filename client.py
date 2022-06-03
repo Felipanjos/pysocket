@@ -5,7 +5,6 @@ from array import array
 import socket
 import sys
 import errno
-import json
 from mensagens import *
 
 def iniciar_leilao():
@@ -13,15 +12,11 @@ def iniciar_leilao():
     nome = str(input("Nome: "))
     desc = str(input("Descrição: "))
     valor = float(input("Valor: ")) 
-    
-    lance = {
-        "nome": nome,
-        "descricao": desc,
-        "valor": valor
-    }
 
-    with open('lances.txt', 'a') as arquivo:
-        arquivo.write(json.dumps(lance))
+    send_msg("lancenovo " + "nome:" + nome + " descricao:" + desc + " valor:" + str(valor))
+
+    # with open('lances.txt', 'a') as arquivo:
+    #     arquivo.write(json.dumps(lance) + '\n')
 
 def checa_cliente(cliente):
     if (cliente == '1'):
@@ -93,12 +88,10 @@ while True:
         send_msg(message)
 
     try:
-        while True:
-            first_msg = receive_msg(client_socket, 1)
-            print(first_msg)
-            msg = receive_msg(client_socket, None)
-            print(msg)
-            print(f'{first_msg} > {message}')
+        # first_msg = receive_msg(client_socket, 1)
+        # print(first_msg)
+        msg = receive_msg(client_socket, None)
+        print(msg)
 
     except IOError as e:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:

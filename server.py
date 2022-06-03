@@ -5,6 +5,7 @@
 import socket
 import select
 from mensagens import *
+import json
 
 HEADER_LENGTH = 30
 IP = "127.0.0.1"
@@ -23,6 +24,8 @@ server_socket.listen()
 sockets_list = [server_socket]
 clients = {}
 lances = {}
+# with open('lances.txt', 'r') as arquivo:
+#     qtd_lances = len(arquivo.readlines())
 
 print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
 
@@ -71,11 +74,38 @@ while True:
                 "message": message["data"].decode("utf-8")
             }
             
-            if (type(decoded['message']) is list): send_msg(notified_socket, NOME + "chegou um dict ")
-
             print(f'{decoded["email"]}: {decoded["message"]}')
-            
             if (decoded['message'] == "salve"): send_msg(notified_socket, NOME + "Resposta do servidor")
+            if(decoded['message'][0 : 9] == "lancenovo"):
+                nome = {
+                    "start": decoded['message'].find("nome:"),
+                    "end": decoded['message'].find("nome:") + len("nome:"),
+                }
+                desc = {
+                    "start": decoded['message'].find(" descricao:"),
+                    "end": decoded['message'].find(" descricao:") + len(" descricao:"),
+                }
+                valor = {
+                    "start": decoded['message'].find(" valor:"),
+                    "end": decoded['message'].find(" valor:") + len(" valor:"),
+                }
+                lance = {
+                    "nome": decoded['message'][nome['end'] : desc['start']],
+                    "descricao": decoded['message'][desc['end'] : valor['start']],
+                    "valor": decoded['message'][valor['end'] : ]
+                }
+
+                lances[lance]
+
+                # with open('lances.txt', 'r') as arquivo:
+                #     qtd_lances = len(arquivo.readlines())    
+                
+                # lance = str(qtd_lances + lance['nome'] + " " + lance['descricao'] + " " + lance['valor'])
+
+                # with open('lances.txt', 'a') as arquivo:
+                #     arquivo.write(json.dumps(lance) + '\n')
+
+                    
 
     for notified_socket in exception_sockets:
         sockets_list.remove(notified_socket)
