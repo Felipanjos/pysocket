@@ -1,7 +1,6 @@
 # encoding: utf-8
 # encoding: iso-8859-1
 # encoding: win-1252
-from array import array
 import socket
 import sys
 import errno
@@ -14,9 +13,6 @@ def iniciar_leilao():
     valor = float(input("Valor: ")) 
 
     send_msg("lancenovo " + "nome:" + nome + " descricao:" + desc + " valor:" + str(valor))
-
-    # with open('lances.txt', 'a') as arquivo:
-    #     arquivo.write(json.dumps(lance) + '\n')
 
 def checa_cliente(cliente):
     if (cliente == '1'):
