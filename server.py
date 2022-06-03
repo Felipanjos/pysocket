@@ -4,13 +4,27 @@
 
 import socket
 import select
-from webbrowser import get
 from mensagens import *
 import json
 
-HEADER_LENGTH = 30
+HEADER_LENGTH = 1024
 IP = "127.0.0.1"
-PORT = 1234
+PORT = 5000
+
+def send_msg(socket, message):
+    message = message.encode('utf-8')
+    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    socket.send(message_header + message)
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind((IP, PORT))
+server_socket.listen()
+
+sockets_list = [server_socket]
+clients = {}
+
+print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
 
 def receive_message(client_socket):
     try:
@@ -18,22 +32,16 @@ def receive_message(client_socket):
         
         if not len(message_header):
             return False
-
         message_length = int(message_header.decode('utf-8').strip())
 
         return {'header': message_header, 'data': client_socket.recv(message_length)}
     except:
         return False
 
-def send_msg(socket, message):
-    message = message.encode('utf-8')
-    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-    socket.send(message_header + message)
-
 def get_lances():
     with open('lances.txt', 'r') as arquivo:
         return str(len(arquivo.readlines())) 
-
+qtd_lances = get_lances()
 def novo_lance():
     nome = {
         "start": decoded['message'].find("nome:"),
@@ -57,17 +65,6 @@ def novo_lance():
 
     with open('lances.txt', 'a') as arquivo:
         arquivo.write(json.dumps(lance) + '\n')
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind((IP, PORT))
-server_socket.listen()
-
-sockets_list = [server_socket]
-clients = {}
-qtd_lances = get_lances()
-
-print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
 
 while True:
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
@@ -103,6 +100,7 @@ while True:
             }
             
             print(f'{decoded["email"]}: {decoded["message"]}')
+            
             if (decoded['message'] == "salve"): send_msg(notified_socket, NOME + "Resposta do servidor")
             if(decoded['message'][0 : 9] == "lancenovo"):
                 antes = int(get_lances())

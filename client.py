@@ -2,17 +2,37 @@
 # encoding: iso-8859-1
 # encoding: win-1252
 import socket
-import sys
-import errno
 from mensagens import *
+import errno
+import sys
+
+HEADER_LENGTH = 1024
+IP = '127.0.0.1'
+PORT = 5000
+udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+udp.connect((IP, PORT))
+udp.setblocking(True)
+
+def try_receive():
+    try:
+        receive_msg(udp)
+
+    except IOError as e:
+        if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
+            print('Erro na leitura: {}'.format(str(e)))
+            sys.exit()
+
+    except Exception as e:
+        print('Erro na leitura: {}'.format(str(e)))
+        sys.exit()
 
 def iniciar_leilao():
     print(start_auction)
     nome = str(input("Nome: "))
     desc = str(input("Descrição: "))
     valor = float(input("Valor: ")) 
-
     send_msg("lancenovo " + "nome:" + nome + " descricao:" + desc + " valor:" + str(valor))
+    try_receive()
 
 def checa_cliente(cliente):
     if (cliente == '1'):
@@ -25,44 +45,28 @@ def checa_cliente(cliente):
 def send_msg(message):
     message = message.encode('utf-8')
     message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-    client_socket.send(message_header + message)
+    udp.send(message_header + message)
 
-def receive_msg(client_socket, number):
+def receive_msg(client_socket):
     message_header = client_socket.recv(HEADER_LENGTH)
-    
-    if (number == 1):
-        if not len(message_header):
-            print('Connection closed by the server')
-            sys.exit()
-    
     message_length = int(message_header.decode('utf-8').strip())
     message = client_socket.recv(message_length).decode('utf-8')
-    return message
-
-HEADER_LENGTH = 30
-IP = "127.0.0.1"
-PORT = 1234
+    print(message)
 
 cliente = checa_cliente(str(input(menu_definir_cliente)))
-
 while not (cliente):
     cliente = checa_cliente(str(input(menu_definir_cliente)))
+
+my_email = input("Email: ")
+send_msg(my_email)
 
 if (cliente == "Vendedor"):
     print(opcoesVendedor)
 elif (cliente == "Comprador"):
     print(opcoesComprador)
 
-my_email = input("Email: ")
-
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((IP, PORT))
-
-client_socket.setblocking(False)
-
-send_msg(my_email)
-
-while True:
+rodar = True
+while rodar == True:
     message = input(f'{my_email} > ')
 
     match cliente:
@@ -75,26 +79,13 @@ while True:
         case "Vendedor":
             match message:
                 case "1":
-                    # send_msg(iniciar_leilao())
-                    teste = iniciar_leilao()
+                    iniciar_leilao()
                 case "2":
                     print("vendedor escolheu 2")
-
+                case "3":
+                    rodar = False
     if message:
         send_msg(message)
-
-    try:
-        # first_msg = receive_msg(client_socket, 1)
-        # print(first_msg)
-        msg = receive_msg(client_socket, None)
-        print(msg)
-
-    except IOError as e:
-        if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
-            print('Erro na leitura: {}'.format(str(e)))
-            sys.exit()
-        continue
-
-    except Exception as e:
-        print('Erro na leitura: {}'.format(str(e)))
-        sys.exit()
+    if (message == "salve"):
+        try_receive()
+udp.close()
