@@ -2,6 +2,7 @@
 # encoding: iso-8859-1
 # encoding: win-1252
 
+from re import A
 import socket
 import select
 from mensagens import *
@@ -23,6 +24,7 @@ server_socket.listen()
 
 sockets_list = [server_socket]
 clients = {}
+artigos = {}
 
 print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
 
@@ -38,11 +40,17 @@ def receive_message(client_socket):
     except:
         return False
 
-def get_lances():
-    with open('lances.txt', 'r') as arquivo:
-        return str(len(arquivo.readlines())) 
-qtd_lances = get_lances()
-def novo_lance():
+def qtd_artigos():
+    return len(artigos)
+
+def get_artigos_string():
+    string = ""
+    for key, value in artigos.items():
+        if value['aberto']:
+            string += 'ID: {}. Nome: {}. Descrição: {}. Maior lance: {}.\n'.format(key, value['nome'], value['descricao'], value['maior_lance'])
+    return string 
+
+def novo_artigo():
     nome = {
         "start": decoded['message'].find("nome:"),
         "end": decoded['message'].find("nome:") + len("nome:"),
@@ -55,16 +63,16 @@ def novo_lance():
         "start": decoded['message'].find(" valor:"),
         "end": decoded['message'].find(" valor:") + len(" valor:"),
     }
-    lance = {
+    artigo = {
         "nome": decoded['message'][nome['end'] : desc['start']],
         "descricao": decoded['message'][desc['end'] : valor['start']],
-        "valor": decoded['message'][valor['end'] : ]
+        "valor": decoded['message'][valor['end'] : ],
+        "aberto": True,
+        "maior_lance": 0
     }
 
-    lance = get_lances() + " " + lance['nome'] + " " + lance['descricao'] + " " + str(lance['valor'])
-
-    with open('lances.txt', 'a') as arquivo:
-        arquivo.write(json.dumps(lance) + '\n')
+    artigos[(qtd_artigos())] = artigo
+    send_msg(notified_socket, "Artigo adicionado com sucesso.")
 
 while True:
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
@@ -92,21 +100,19 @@ while True:
                 
                 del clients[notified_socket]
                 continue
-            user = clients[notified_socket]
             
+            user = clients[notified_socket]
             decoded = {
                 "email": user["data"].decode("utf-8"),
                 "message": message["data"].decode("utf-8")
             }
-            
             print(f'{decoded["email"]}: {decoded["message"]}')
             
-            if (decoded['message'] == "salve"): send_msg(notified_socket, NOME + "Resposta do servidor")
-            if(decoded['message'][0 : 9] == "lancenovo"):
-                antes = int(get_lances())
-                novo_lance()
-                if (int(get_lances()) == antes + 1):
-                    send_msg(notified_socket, "Artigo adicionado com sucesso.")
+            if(decoded['message'][0 : 10] == "artigonovo"):
+                novo_artigo()
+            
+            if(decoded['message'][0 : 13] == "lista_artigos"):
+                send_msg(notified_socket, get_artigos_string())
 
     for notified_socket in exception_sockets:
         sockets_list.remove(notified_socket)

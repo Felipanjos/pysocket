@@ -13,6 +13,11 @@ udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 udp.connect((IP, PORT))
 udp.setblocking(True)
 
+artigos = {}
+
+def qtd_artigos():
+    return len(artigos)
+
 def try_receive():
     try:
         receive_msg(udp)
@@ -26,14 +31,19 @@ def try_receive():
         print('Erro na leitura: {}'.format(str(e)))
         sys.exit()
 
+def lista_artigos():
+    send_msg("lista_artigos")
+    receive_msg(udp)
+
 def iniciar_leilao():
     print(start_auction)
     nome = str(input("Nome: "))
     desc = str(input("Descrição: "))
     valor = float(input("Valor: ")) 
-    send_msg("lancenovo " + "nome:" + nome + " descricao:" + desc + " valor:" + str(valor))
+    send_msg("artigonovo " + "nome:" + nome + " descricao:" + desc + " valor:" + str(valor))
     try_receive()
 
+    
 def checa_cliente(cliente):
     if (cliente == '1'):
         return "Comprador"
@@ -52,6 +62,7 @@ def receive_msg(client_socket):
     message_length = int(message_header.decode('utf-8').strip())
     message = client_socket.recv(message_length).decode('utf-8')
     print(message)
+    return message
 
 cliente = checa_cliente(str(input(menu_definir_cliente)))
 while not (cliente):
@@ -68,12 +79,11 @@ elif (cliente == "Comprador"):
 rodar = True
 while rodar == True:
     message = input(f'{my_email} > ')
-
     match cliente:
         case "Comprador":
             match message:
                 case "1":
-                    print("comprador escolheu 1")
+                    lista_artigos()
                 case "2":
                     print("comprador escolheu 2")
         case "Vendedor":
