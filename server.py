@@ -1,34 +1,30 @@
-# encoding: utf-8
-# encoding: iso-8859-1
-# encoding: win-1252
-
 import socket
 import select
 from mensagens import *
 
-HEADER_LENGTH = 1024
+SIZE = 1024
 IP = "127.0.0.1"
-PORT = 5000
+PORTA = 5000
 
 def send_msg(socket, message):
     message = message.encode('utf-8')
-    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    message_header = f"{len(message):<{SIZE}}".encode('utf-8')
     socket.send(message_header + message)
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind((IP, PORT))
-server_socket.listen()
+udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+udp.bind((IP, PORTA))
+udp.listen()
 
-sockets_list = [server_socket]
-clients = {}
+sockets_list = [udp]
+clientes = {}
 artigos = {}
 
-print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORT})...')
+print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORTA})...')
 
 def receive_message(client_socket):
     try:
-        message_header = client_socket.recv(HEADER_LENGTH)
+        message_header = client_socket.recv(SIZE)
         
         if not len(message_header):
             return False
@@ -99,7 +95,7 @@ def encerrar_leilao(id):
         maior_lance = artigos[id]["maior_lance"]
         descricao = artigos[id]["descricao"]
         artigos[id]["aberto"] = False
-        if (maior_lance > 0):
+        if (float(maior_lance) > 0):
             send_msg(notified_socket, "Leilão do item \"" + artigos[id]["nome"] + "\" encerrado.\n Vencedor: " + artigos[id]["cliente_maior_lance"] + ".\n Maior lance: " + str(maior_lance) + ".")
         elif(maior_lance == "Nenhum" or maior_lance == 0):
             send_msg(notified_socket, "Leilão do item \"" + descricao + "\" encerrado. Não houveram lances para o item em questão.")
@@ -146,30 +142,29 @@ while True:
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
     
     for notified_socket in read_sockets:
-        if notified_socket == server_socket:
+        if notified_socket == udp:
 
-            client_socket, client_address = server_socket.accept()
+            client_socket, client_address = udp.accept()
             user = receive_message(client_socket)
 
             if user is False:
                 continue
 
             sockets_list.append(client_socket)
-            clients[client_socket] = user
-            print('Nova conexão. Email: {}.'.format(user['data'].decode('utf-8')))
-            # print('Nova conexão. Email: {}. Endereço: {}:{}'.format(user['data'].decode('utf-8'), *client_address))
+            clientes[client_socket] = user
+            print('Nova conexão. Email: {}. Endereço: {}:{}'.format(user['data'].decode('utf-8'), *client_address))
         
         else:
             message = receive_message(notified_socket)
             if message is False:
-                print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
+                print('Closed connection from: {}'.format(clientes[notified_socket]['data'].decode('utf-8')))
                 
                 sockets_list.remove(notified_socket)
                 
-                del clients[notified_socket]
+                del clientes[notified_socket]
                 continue
             
-            user = clients[notified_socket]
+            user = clientes[notified_socket]
             decoded = {
                 "email": user["data"].decode("utf-8"),
                 "message": message["data"].decode("utf-8")
@@ -193,4 +188,4 @@ while True:
 
     for notified_socket in exception_sockets:
         sockets_list.remove(notified_socket)
-        del clients[notified_socket]
+        del clientes[notified_socket]
