@@ -62,23 +62,24 @@ def get_artigos_string():
         send_msg(notified_socket, "Não há artigos em leilão.")
 
 def novo_artigo():
+
     nome = {
-        "start": decoded['message'].find("nome:"),
-        "end": decoded['message'].find("nome:") + len("nome:"),
+        "start": aux_msg.find("nome:"),
+        "end": aux_msg.find("nome:") + len("nome:"),
     }
     desc = {
-        "start": decoded['message'].find(" descricao:"),
-        "end": decoded['message'].find(" descricao:") + len(" descricao:"),
+        "start": aux_msg.find(" descricao:"),
+        "end": aux_msg.find(" descricao:") + len(" descricao:"),
     }
     valor = {
-        "start": decoded['message'].find(" valor:"),
-        "end": decoded['message'].find(" valor:") + len(" valor:"),
+        "start": aux_msg.find(" valor:"),
+        "end": aux_msg.find(" valor:") + len(" valor:"),
     }
     artigo = {
         "id": len(artigos),
-        "nome": decoded['message'][nome['end'] : desc['start']],
-        "descricao": decoded['message'][desc['end'] : valor['start']],
-        "valor": decoded['message'][valor['end'] : ],
+        "nome": aux_msg[nome['end'] : desc['start']],
+        "descricao": aux_msg[desc['end'] : valor['start']],
+        "valor": aux_msg[valor['end'] : ],
         "aberto": True,
         "cliente_maior_lance": None,
         "maior_lance": 0,
@@ -102,22 +103,22 @@ def encerrar_leilao(id):
 
 def registra_lance():
     artigo = {
-        "start": decoded['message'].find("artigo:"),
-        "end": decoded['message'].find("artigo:") + len("artigo:"),
+        "start": aux_msg.find("artigo:"),
+        "end": aux_msg.find("artigo:") + len("artigo:"),
     }
     valor = {
-        "start": decoded['message'].find(" valor:"),
-        "end": decoded['message'].find(" valor:") + len(" valor:"),
+        "start": aux_msg.find(" valor:"),
+        "end": aux_msg.find(" valor:") + len(" valor:"),
     }
     email = {
-        "start": decoded['message'].find(" email:"),
-        "end": decoded['message'].find(" email:") + len(" email:"),
+        "start": aux_msg.find(" email:"),
+        "end": aux_msg.find(" email:") + len(" email:"),
     }
 
     lance = {
-        "artigo": int(decoded['message'][artigo["end"] : valor["start"]]),
-        "valor": decoded["message"][valor["end"] : email["start"]], 
-        "email": decoded["message"][email["end"] : ], 
+        "artigo": int(aux_msg[artigo["end"] : valor["start"]]),
+        "valor": aux_msg[valor["end"] : email["start"]], 
+        "email": aux_msg[email["end"] : ], 
     }
 
     id_artigo = lance["artigo"]
@@ -145,45 +146,43 @@ while True:
         if notified_socket == udp:
 
             client_socket, client_address = udp.accept()
-            user = receive_message(client_socket)
+            # user = receive_message(client_socket)
 
-            if user is False:
-                continue
+            # if user is False:
+            #     continue
 
             sockets_list.append(client_socket)
-            clientes[client_socket] = user
-            print('Nova conexão. Email: {}. Endereço: {}:{}'.format(user['data'].decode('utf-8'), *client_address))
+            clientes[client_socket] = client_socket
+            print('Nova conexão. Endereço: {}:{}'.format(*client_address))
         
         else:
             message = receive_message(notified_socket)
             if message is False:
-                print('Closed connection from: {}'.format(clientes[notified_socket]['data'].decode('utf-8')))
+                print('Conexão encerrada: {}:{}'.format(*client_address))
                 
                 sockets_list.remove(notified_socket)
                 
                 del clientes[notified_socket]
                 continue
             
-            user = clientes[notified_socket]
-            decoded = {
-                "email": user["data"].decode("utf-8"),
-                "message": message["data"].decode("utf-8")
-            }
-            print(f'{decoded["email"]}: {decoded["message"]}')
+            client_socket = clientes[notified_socket]
+            aux_msg = message["data"].decode("utf-8")
+
+            print(f'{aux_msg}')
             
-            if(decoded['message'][0 : 10] == "artigonovo"):
+            if(aux_msg[0 : 10] == "artigonovo"):
                 novo_artigo()
             
-            if(decoded['message'][0 : 13] == "lista_artigos"):
+            if(aux_msg[0 : 13] == "lista_artigos"):
                 get_artigos_string()
 
-            if(decoded['message'].startswith("encerrar")):
-                encerrar_leilao(decoded['message'][len("encerrar") : ])
+            if(aux_msg.startswith("encerrar")):
+                encerrar_leilao(aux_msg[len("encerrar") : ])
 
-            if(decoded['message'].startswith("listar_meus_artigos")):
-                get_artigos_vendedor(decoded['message'][len("listar_meus_artigos") : ])
+            if(aux_msg.startswith("listar_meus_artigos")):
+                get_artigos_vendedor(aux_msg[len("listar_meus_artigos") : ])
 
-            if(decoded['message'].startswith("novo_lance")):
+            if(aux_msg.startswith("novo_lance")):
                 registra_lance()
 
     for notified_socket in exception_sockets:

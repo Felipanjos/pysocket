@@ -10,7 +10,7 @@ udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 udp.connect((IP, PORT))
 udp.setblocking(True)
 
-meu_email = input("Informe seu e-mail para contato: ")
+meu_email = ''
 
 def send_msg(message):
     message = message.encode('utf-8')
@@ -35,6 +35,7 @@ def lista_artigos():
     try_receive()
 
 def faz_lance():
+    meu_email = input("Informe seu e-mail para contato: ")
     artigo = input(artigo_lance)
     valor = input(valor_lance)
     send_msg("novo_lance" + "artigo:" + artigo +" valor:" + valor + " email:" + meu_email)

@@ -14,7 +14,7 @@ udp.connect((IP, PORT))
 udp.setblocking(True)
 
 meus_artigos = {}
-nome = input("Informe seu nome: ")
+nome = ''
 print(opcoesVendedor)
 
 def send_msg(message):
@@ -37,6 +37,7 @@ def try_receive():
 
 
 def iniciar_leilao():
+    nome = input("Informe seu nome: ")
     print(start_auction)
     desc = str(input("Descrição: "))
     valor = float(input("Lance mínimo: ")) 
@@ -65,8 +66,6 @@ def receive_msg(client_socket):
     message = client_socket.recv(message_length).decode('utf-8')
     print(message)
     return message
-
-send_msg(nome)
 
 rodar = True
 while rodar == True:
