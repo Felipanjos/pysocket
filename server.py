@@ -42,9 +42,16 @@ def get_artigos_vendedor(nome):
             tem_artigos = True
             maior_lance = "Nenhum" if value['maior_lance'] == 0 else value['maior_lance']
             
-            string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
-            send_msg(notified_socket, string)
-    if not tem_artigos:
+            if value['aberto']:
+                string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
+            else:
+                if value['cliente_maior_lance'] is None:
+                    string += 'ID: {}. Descrição: {}. Nenhum lance recebido.\n'.format(key, value['descricao'])
+                else:
+                    string += 'ID: {}. Descrição: {}. Lance final: {}. Comprado por: {}\n'.format(key, value['descricao'], maior_lance, value['cliente_maior_lance'])
+    if tem_artigos:
+        send_msg(notified_socket, string)
+    else:
         send_msg(notified_socket, "Você não tem artigos registrados.")
         
 def get_artigos_string():
@@ -56,11 +63,13 @@ def get_artigos_string():
             
             maior_lance = "Nenhum" if value['maior_lance'] == 0 else value['maior_lance']
 
-            string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
-            send_msg(notified_socket, string)
-    if not tem_aberto:
-        send_msg(notified_socket, "Não há artigos em leilão.")
+            string += 'ID: {}. Descrição: {}. Lance mínimo: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], value['valor'], maior_lance)
 
+    if tem_aberto:   
+        send_msg(notified_socket, string)
+    else:
+        send_msg(notified_socket, "Não há artigos em leilão.")
+        
 def novo_artigo():
     nome = {
         "start": decoded['message'].find("nome:"),
@@ -157,7 +166,7 @@ while True:
         else:
             message = receive_message(notified_socket)
             if message is False:
-                print('Closed connection from: {}'.format(clientes[notified_socket]['data'].decode('utf-8')))
+                print('Conexão de {} encerrada.'.format(clientes[notified_socket]['data'].decode('utf-8')))
                 
                 sockets_list.remove(notified_socket)
                 

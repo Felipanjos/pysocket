@@ -6,7 +6,7 @@ from mensagens import *
 import errno
 import sys
 
-HEADER_LENGTH = 1024
+SIZE = 1024
 IP = '127.0.0.1'
 PORT = 5000
 udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -19,7 +19,7 @@ print(opcoesVendedor)
 
 def send_msg(message):
     message = message.encode('utf-8')
-    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    message_header = f"{len(message):<{SIZE}}".encode('utf-8')
     udp.send(message_header + message)
 
 def try_receive():
@@ -60,7 +60,7 @@ def listar_meus_artigos():
     try_receive()
 
 def receive_msg(client_socket):
-    message_header = client_socket.recv(HEADER_LENGTH)
+    message_header = client_socket.recv(SIZE)
     message_length = int(message_header.decode('utf-8').strip())
     message = client_socket.recv(message_length).decode('utf-8')
     print(message)
