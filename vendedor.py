@@ -6,20 +6,20 @@ from mensagens import *
 import errno
 import sys
 
-HEADER_LENGTH = 1024
+SIZE = 4096
 IP = '127.0.0.1'
 PORT = 5000
 udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 udp.connect((IP, PORT))
 udp.setblocking(True)
 
+nome = None
 meus_artigos = {}
-nome = ''
 print(opcoesVendedor)
 
 def send_msg(message):
     message = message.encode('utf-8')
-    message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+    message_header = f"{len(message):<{SIZE}}".encode('utf-8')
     udp.send(message_header + message)
 
 def try_receive():
@@ -37,7 +37,6 @@ def try_receive():
 
 
 def iniciar_leilao():
-    nome = input("Informe seu nome: ")
     print(start_auction)
     desc = str(input("Descrição: "))
     valor = float(input("Lance mínimo: ")) 
@@ -61,7 +60,7 @@ def listar_meus_artigos():
     try_receive()
 
 def receive_msg(client_socket):
-    message_header = client_socket.recv(HEADER_LENGTH)
+    message_header = client_socket.recv(SIZE)
     message_length = int(message_header.decode('utf-8').strip())
     message = client_socket.recv(message_length).decode('utf-8')
     print(message)
@@ -72,10 +71,14 @@ while rodar == True:
     message = input(f'-> ')
     match message:
         case "1":
+            if (nome is None):
+                nome = input("Informe seu nome: ")
             iniciar_leilao()
         case "2":
             encerrar_leilao()
         case "3":
+            if (nome is None):
+                nome = input("Informe seu nome: ")
             listar_meus_artigos()
         case "4":
             rodar = False

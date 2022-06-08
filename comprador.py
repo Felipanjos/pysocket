@@ -3,14 +3,13 @@ import socket
 import errno
 import sys
 
-SIZE = 1024
+SIZE = 4096
 IP = '127.0.0.1'
 PORT = 5000
 udp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 udp.connect((IP, PORT))
 udp.setblocking(True)
-
-meu_email = ''
+meu_email = None
 
 def send_msg(message):
     message = message.encode('utf-8')
@@ -35,7 +34,6 @@ def lista_artigos():
     try_receive()
 
 def faz_lance():
-    meu_email = input("Informe seu e-mail para contato: ")
     artigo = input(artigo_lance)
     valor = input(valor_lance)
     send_msg("novo_lance" + "artigo:" + artigo +" valor:" + valor + " email:" + meu_email)
@@ -48,7 +46,6 @@ def receive_msg(client_socket):
     print(message)
     return message
 
-send_msg(meu_email)
 print(opcoesComprador)
 
 rodar = True
@@ -58,6 +55,8 @@ while rodar == True:
         case "1":
             lista_artigos()
         case "2":
+            if (meu_email is None):
+                meu_email = input("Informe seu e-mail para contato: ")
             faz_lance()
         case "3":
             rodar = False

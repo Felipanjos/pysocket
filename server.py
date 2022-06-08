@@ -2,8 +2,8 @@ import socket
 import select
 from mensagens import *
 
-SIZE = 1024
-IP = "127.0.0.1"
+SIZE = 4096
+IP = '127.0.0.1'
 PORTA = 5000
 
 def send_msg(socket, message):
@@ -22,15 +22,15 @@ artigos = {}
 
 print(f'Bem vindo ao sistema de leilão! Aguardando conexões ({IP}:{PORTA})...')
 
-def receive_message(client_socket):
+def receive_message(cliente):
     try:
-        message_header = client_socket.recv(SIZE)
+        message_header = cliente.recv(SIZE)
         
         if not len(message_header):
             return False
         message_length = int(message_header.decode('utf-8').strip())
 
-        return {'header': message_header, 'data': client_socket.recv(message_length)}
+        return {'header': message_header, 'data': cliente.recv(message_length)}
     except:
         return False
 
@@ -41,10 +41,16 @@ def get_artigos_vendedor(nome):
         if value['nome'] == nome:
             tem_artigos = True
             maior_lance = "Nenhum" if value['maior_lance'] == 0 else value['maior_lance']
-            
-            string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
-            send_msg(notified_socket, string)
-    if not tem_artigos:
+            if value['aberto']:
+                string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
+            else:
+                if value['cliente_maior_lance'] is None:
+                    string += 'ID: {}. Descrição: {}. Nenhum lance recebido.\n'.format(key, value['descricao'])
+                else:
+                    string += 'ID: {}. Descrição: {}. Lance final: {}. Comprado por: {}\n'.format(key, value['descricao'], maior_lance, value['cliente_maior_lance'])
+    if tem_artigos:
+        send_msg(notified_socket, string)
+    else:
         send_msg(notified_socket, "Você não tem artigos registrados.")
         
 def get_artigos_string():
@@ -55,10 +61,11 @@ def get_artigos_string():
             tem_aberto = True
             
             maior_lance = "Nenhum" if value['maior_lance'] == 0 else value['maior_lance']
-
-            string += 'ID: {}. Descrição: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], maior_lance)
-            send_msg(notified_socket, string)
-    if not tem_aberto:
+            string += 'ID: {}. Descrição: {}. Lance mínimo: {}. Maior lance até o momento: {}.\n'.format(key, value['descricao'], value['valor'], maior_lance)
+    
+    if tem_aberto:   
+        send_msg(notified_socket, string)
+    else:
         send_msg(notified_socket, "Não há artigos em leilão.")
 
 def novo_artigo():
@@ -145,14 +152,9 @@ while True:
     for notified_socket in read_sockets:
         if notified_socket == udp:
 
-            client_socket, client_address = udp.accept()
-            # user = receive_message(client_socket)
-
-            # if user is False:
-            #     continue
-
-            sockets_list.append(client_socket)
-            clientes[client_socket] = client_socket
+            cliente, client_address = udp.accept()
+            sockets_list.append(cliente)
+            clientes[cliente] = cliente
             print('Nova conexão. Endereço: {}:{}'.format(*client_address))
         
         else:
@@ -165,7 +167,7 @@ while True:
                 del clientes[notified_socket]
                 continue
             
-            client_socket = clientes[notified_socket]
+            cliente = clientes[notified_socket]
             aux_msg = message["data"].decode("utf-8")
 
             print(f'{aux_msg}')
